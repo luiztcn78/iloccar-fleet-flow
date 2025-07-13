@@ -47,14 +47,14 @@ export function VehicleSearch({ onSearch, filters }: VehicleSearchProps) {
           <div className="space-y-2">
             <Label>Categoria</Label>
             <Select
-              value={localFilters.categoria || ''}
-              onValueChange={(value) => handleFilterChange('categoria', value || undefined)}
+              value={localFilters.categoria || 'all'}
+              onValueChange={(value) => handleFilterChange('categoria', value === 'all' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {mockCategories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
