@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, LoginCredentials, AuthContextType } from '@/types';
-import { AuthService } from '@/lib/auth';
+import { User } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isLoading: boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -10,31 +17,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is already logged in
-    const currentUser = AuthService.getCurrentUser();
-    setUser(currentUser);
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
     setIsLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
+    
     try {
-      const authenticatedUser = await AuthService.authenticate(credentials);
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
+      // Query users table for authentication
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error || !users) {
+        setIsLoading(false);
+        return false;
+      }
+
+      // In a real app, you'd use proper password hashing (bcrypt, etc.)
+      // For this demo, we'll do a simple comparison
+      if (users.password_hash === password) {
+        const userWithoutPassword = {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          phone: users.phone
+        };
+        
+        setUser(userWithoutPassword);
+        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
         setIsLoading(false);
         return true;
       }
+      
       setIsLoading(false);
       return false;
-    } catch {
+    } catch (error) {
+      console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }
   };
 
   const logout = () => {
-    AuthService.logout();
     setUser(null);
+    localStorage.removeItem('currentUser');
   };
 
   const value: AuthContextType = {
