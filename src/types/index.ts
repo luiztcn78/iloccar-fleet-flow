@@ -1,6 +1,6 @@
 // iLoccar System Types
 
-export type UserRole = 'cliente' | 'funcionario' | 'administrador';
+export type UserRole = 'cliente' | 'funcionario' | 'admin';
 
 export interface User {
   id: string;
@@ -23,7 +23,7 @@ export interface Cliente extends User {
 }
 
 export interface Funcionario extends User {
-  role: 'funcionario' | 'administrador';
+  role: 'funcionario' | 'admin';
 }
 
 export type VehicleStatus = 'disponivel' | 'alugado' | 'manutencao';
