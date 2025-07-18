@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchFilters } from '@/types';
-import { mockCategories } from '@/data/mockData';
+const mockCategories = ['economico', 'compacto', 'intermediario', 'executivo', 'suv', 'luxo'];
 
 interface VehicleSearchProps {
   onSearch: (filters: SearchFilters) => void;

@@ -1,19 +1,18 @@
 // iLoccar System Types
 
-export type UserRole = 'cliente' | 'funcionario' | 'administrador';
+export type UserRole = 'cliente' | 'funcionario' | 'admin';
 
 export interface User {
   id: string;
-  nome: string;
+  name: string;
   email: string;
-  telefone: string;
-  senha: string;
+  phone?: string;
   role: UserRole;
-  cpf?: string; // Apenas para clientes
-  cnh?: string; // Apenas para clientes
-  dataNascimento?: string; // Apenas para clientes
-  createdAt: string;
-  updatedAt: string;
+  cpf?: string;
+  cnh?: string;
+  dataNascimento?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Cliente extends User {
@@ -24,40 +23,43 @@ export interface Cliente extends User {
 }
 
 export interface Funcionario extends User {
-  role: 'funcionario' | 'administrador';
+  role: 'funcionario' | 'admin';
 }
 
 export type VehicleStatus = 'disponivel' | 'alugado' | 'manutencao';
 
 export interface Vehicle {
   id: string;
-  placa: string;
-  modelo: string;
-  ano: number;
-  cor: string;
-  categoria: string;
-  valorDiaria: number;
+  plate: string;
+  model: string;
+  brand: string;
+  year: number;
+  category: string;
+  daily_rate: number;
   status: VehicleStatus;
-  foto?: string;
-  caracteristicas: string[];
-  createdAt: string;
-  updatedAt: string;
+  image_url?: string;
+  fuel_type: string;
+  transmission: string;
+  doors: number;
+  air_conditioning: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type ReservationStatus = 'pendente' | 'confirmada' | 'cancelada' | 'finalizada';
 
 export interface Reservation {
   id: string;
-  clienteId: string;
-  vehicleId: string;
-  dataInicio: string;
-  dataFim: string;
-  valorTotal: number;
+  user_id: string;
+  vehicle_id: string;
+  start_date: string;
+  end_date: string;
+  total_amount: number;
   status: ReservationStatus;
-  cliente?: Cliente;
+  cliente?: User;
   vehicle?: Vehicle;
-  createdAt: string;
-  updatedAt: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface SearchFilters {
@@ -69,7 +71,7 @@ export interface SearchFilters {
 
 export interface LoginCredentials {
   email: string;
-  senha: string;
+  password: string;
 }
 
 export interface AuthContextType {

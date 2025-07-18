@@ -39,7 +39,7 @@ function AppContent() {
       return <ClienteDashboard />;
     case 'funcionario':
       return <FuncionarioDashboard />;
-    case 'administrador':
+    case 'admin':
       return <AdminDashboard />;
     default:
       return <LoginPage onLoginSuccess={() => {}} />;
