@@ -1,231 +1,132 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Search, Calendar, Car } from 'lucide-react';
 import { Layout } from '@/components/Layout';
-import { VehicleSearch } from '@/components/VehicleSearch';
 import { VehicleCard } from '@/components/VehicleCard';
+import { VehicleSearch } from '@/components/VehicleSearch';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Car, Clock, CreditCard } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Vehicle, Reservation } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Vehicle, SearchFilters, Reservation } from '@/types';
+import { mockVehicles, mockReservations } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 
-export const ClienteDashboard: React.FC = () => {
+export function ClienteDashboard() {
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [reservationDates, setReservationDates] = useState({
+    dataInicio: '',
+    dataFim: ''
+  });
+  const [isReservationDialogOpen, setIsReservationDialogOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [reservationStep, setReservationStep] = useState<'search' | 'details' | 'confirm'>('search');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [userReservations, setUserReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isReservationDialogOpen, setIsReservationDialogOpen] = useState(false);
 
-  // Load vehicles from Supabase
-  const loadVehicles = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('status', 'disponivel');
+  // Filter vehicles based on search criteria
+  const filteredVehicles = useMemo(() => {
+    return mockVehicles.filter(vehicle => {
+      if (searchFilters.categoria && vehicle.categoria !== searchFilters.categoria) {
+        return false;
+      }
+      if (searchFilters.valorMaximo && vehicle.valorDiaria > searchFilters.valorMaximo) {
+        return false;
+      }
+      // In real app, would check date availability against reservations
+      return vehicle.status === 'disponivel';
+    });
+  }, [searchFilters]);
 
-      if (error) throw error;
-
-      const formattedVehicles: Vehicle[] = data?.map(vehicle => ({
-        id: vehicle.id,
-        modelo: vehicle.model,
-        marca: vehicle.brand,
-        ano: vehicle.year,
-        placa: vehicle.plate,
-        categoria: vehicle.category,
-        valorDiaria: parseFloat(vehicle.daily_rate),
-        status: vehicle.status,
-        imagem: vehicle.image_url || '/placeholder.svg',
-        combustivel: vehicle.fuel_type,
-        transmissao: vehicle.transmission,
-        portas: vehicle.doors,
-        arCondicionado: vehicle.air_conditioning,
-        cor: '',
-        caracteristicas: []
-      })) || [];
-
-      setVehicles(formattedVehicles);
-      setFilteredVehicles(formattedVehicles);
-    } catch (error) {
-      console.error('Error loading vehicles:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os veículos.",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
-  // Load user reservations
-  const loadReservations = useCallback(async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .select(`
-          *,
-          vehicles (*)
-        `)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      const formattedReservations: Reservation[] = data?.map(reservation => ({
-        id: reservation.id,
-        clienteId: reservation.user_id,
-        veiculoId: reservation.vehicle_id,
-        dataInicio: reservation.start_date,
-        dataFim: reservation.end_date,
-        valorTotal: parseFloat(reservation.total_amount),
-        status: reservation.status === 'ativa' ? 'confirmada' : reservation.status,
-        dataCriacao: reservation.created_at
-      })) || [];
-
-      setUserReservations(formattedReservations);
-    } catch (error) {
-      console.error('Error loading reservations:', error);
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    loadVehicles();
-    loadReservations();
-  }, [loadVehicles, loadReservations]);
+  // Get user reservations
+  const userReservations = mockReservations.filter(r => r.clienteId === user?.id);
 
   const handleVehicleSelect = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setIsReservationDialogOpen(true);
   };
 
-  const handleReserve = async () => {
-    if (!selectedVehicle || !startDate || !endDate || !user?.id) return;
-
-    setLoading(true);
-    try {
-      // Calculate total amount
-      const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
-      const totalAmount = days * selectedVehicle.valorDiaria;
-
-      // Create reservation in database
-      const { data, error } = await supabase
-        .from('reservations')
-        .insert({
-          user_id: user.id,
-          vehicle_id: selectedVehicle.id,
-          start_date: startDate,
-          end_date: endDate,
-          total_amount: totalAmount,
-          status: 'ativa'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Reset form
-      setSelectedVehicle(null);
-      setStartDate('');
-      setEndDate('');
-      setIsReservationDialogOpen(false);
-      
-      // Reload data
-      await loadVehicles();
-      await loadReservations();
-
+  const handleReservation = () => {
+    if (!selectedVehicle || !reservationDates.dataInicio || !reservationDates.dataFim) {
       toast({
-        title: "Sucesso!",
-        description: "Reserva realizada com sucesso!",
+        title: 'Dados incompletos',
+        description: 'Por favor, preencha todas as datas',
+        variant: 'destructive'
       });
-    } catch (error) {
-      console.error('Error creating reservation:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível realizar a reserva. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
-  const handleSearch = (filters: any) => {
-    let filtered = vehicles;
-    
-    if (filters.category) {
-      filtered = filtered.filter(v => v.categoria === filters.category);
-    }
-    
-    if (filters.maxPrice) {
-      filtered = filtered.filter(v => v.valorDiaria <= filters.maxPrice);
-    }
-    
-    setFilteredVehicles(filtered);
+    // Calculate days and total value
+    const startDate = new Date(reservationDates.dataInicio);
+    const endDate = new Date(reservationDates.dataFim);
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const totalValue = days * selectedVehicle.valorDiaria;
+
+    // In real app, would send to API
+    toast({
+      title: 'Reserva realizada com sucesso!',
+      description: `Veículo ${selectedVehicle.modelo} reservado por ${days} dias. Total: R$ ${totalValue}`,
+    });
+
+    setIsReservationDialogOpen(false);
+    setSelectedVehicle(null);
+    setReservationDates({ dataInicio: '', dataFim: '' });
   };
 
   return (
-    <Layout title="Dashboard Cliente">
-      <div className="container mx-auto p-6 space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Bem-vindo, {user?.name}!
-          </h1>
-          <p className="text-muted-foreground">
-            Encontre o veículo perfeito para sua próxima viagem
-          </p>
-        </div>
-
+    <Layout title="Painel do Cliente">
+      <div className="space-y-8">
         {/* Search Section */}
-        <VehicleSearch filters={{}} onSearch={handleSearch} />
+        <section>
+          <VehicleSearch
+            filters={searchFilters}
+            onSearch={setSearchFilters}
+          />
+        </section>
 
         {/* My Reservations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Minhas Reservas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {userReservations.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Você ainda não possui reservas
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {userReservations.map((reservation) => (
-                  <div key={reservation.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">Reserva #{reservation.id}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {reservation.dataInicio} até {reservation.dataFim}
-                        </p>
-                        <p className="text-lg font-bold text-primary">
-                          R$ {reservation.valorTotal}
-                        </p>
+        <section>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Minhas Reservas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {userReservations.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">
+                  Você ainda não possui reservas
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {userReservations.map((reservation) => (
+                    <div key={reservation.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">Reserva #{reservation.id}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {reservation.dataInicio} até {reservation.dataFim}
+                          </p>
+                          <p className="text-lg font-bold text-primary">
+                            R$ {reservation.valorTotal}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          reservation.status === 'confirmada' ? 'bg-success text-success-foreground' :
+                          reservation.status === 'pendente' ? 'bg-warning text-warning-foreground' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {reservation.status}
+                        </span>
                       </div>
-                      <Badge variant={reservation.status === 'confirmada' ? 'default' : 'secondary'}>
-                        {reservation.status}
-                      </Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Available Vehicles */}
         <section>
@@ -277,32 +178,28 @@ export const ClienteDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="startDate">Data de Início</Label>
+                    <Label htmlFor="dataInicio">Data de Início</Label>
                     <Input
-                      id="startDate"
+                      id="dataInicio"
                       type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
+                      value={reservationDates.dataInicio}
+                      onChange={(e) => setReservationDates(prev => ({ ...prev, dataInicio: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="endDate">Data de Fim</Label>
+                    <Label htmlFor="dataFim">Data de Fim</Label>
                     <Input
-                      id="endDate"
+                      id="dataFim"
                       type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
+                      value={reservationDates.dataFim}
+                      onChange={(e) => setReservationDates(prev => ({ ...prev, dataFim: e.target.value }))}
                     />
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={handleReserve}
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    {loading ? 'Processando...' : 'Confirmar Reserva'}
+                  <Button onClick={handleReservation} className="flex-1" variant="gradient">
+                    Confirmar Reserva
                   </Button>
                   <Button 
                     onClick={() => setIsReservationDialogOpen(false)} 
@@ -319,4 +216,4 @@ export const ClienteDashboard: React.FC = () => {
       </div>
     </Layout>
   );
-};
+}

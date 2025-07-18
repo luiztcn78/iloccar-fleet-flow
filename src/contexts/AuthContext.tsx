@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, UserRole } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  isLoading: boolean;
-}
+import { User, LoginCredentials, AuthContextType } from '@/types';
+import { AuthService } from '@/lib/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,58 +10,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is already logged in
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const currentUser = AuthService.getCurrentUser();
+    setUser(currentUser);
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (credentials: LoginCredentials): Promise<boolean> => {
     setIsLoading(true);
-    
     try {
-      // Query users table for authentication
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (error || !users) {
-        setIsLoading(false);
-        return false;
-      }
-
-      // In a real app, you'd use proper password hashing (bcrypt, etc.)
-      // For this demo, we'll do a simple comparison
-      if (users.password_hash === password) {
-        const userWithoutPassword: User = {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          role: users.role as UserRole,
-          phone: users.phone
-        };
-        
-        setUser(userWithoutPassword);
-        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+      const authenticatedUser = await AuthService.authenticate(credentials);
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
         setIsLoading(false);
         return true;
       }
-      
       setIsLoading(false);
       return false;
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch {
       setIsLoading(false);
       return false;
     }
   };
 
   const logout = () => {
+    AuthService.logout();
     setUser(null);
-    localStorage.removeItem('currentUser');
   };
 
   const value: AuthContextType = {
