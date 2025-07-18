@@ -32,7 +32,7 @@ export function Layout({ children, title }: LayoutProps) {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sidebar-foreground">
                 <User className="h-4 w-4" />
-                <span className="text-sm font-medium">{user?.name}</span>
+                <span className="text-sm font-medium">{user?.nome}</span>
                 <span className="text-xs bg-primary px-2 py-1 rounded-full text-primary-foreground">
                   {user?.role}
                 </span>

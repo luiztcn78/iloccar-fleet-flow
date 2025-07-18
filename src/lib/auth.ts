@@ -1,7 +1,7 @@
 // Authentication service for iLoccar
 
 import { User, LoginCredentials } from '@/types';
-
+import { mockUsers } from '@/data/mockData';
 
 const AUTH_STORAGE_KEY = 'iloccar_auth_user';
 
@@ -10,9 +10,18 @@ export class AuthService {
   static async authenticate(credentials: LoginCredentials): Promise<User | null> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    // Simulate auth with Supabase data
-    return { id: '1', name: 'Test User', email: credentials.email, role: 'cliente' } as User;
     
+    const user = mockUsers.find(
+      u => u.email === credentials.email && u.senha === credentials.senha
+    );
+    
+    if (user) {
+      // Store user in localStorage (in real app, would use secure token)
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      return user;
+    }
+    
+    return null;
   }
 
   static getCurrentUser(): User | null {
@@ -37,7 +46,7 @@ export class AuthService {
     if (!user) return false;
     
     // Admin has access to everything
-    if (user.role === 'admin') return true;
+    if (user.role === 'administrador') return true;
     
     return user.role === requiredRole;
   }

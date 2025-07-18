@@ -4,13 +4,13 @@ import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
+import { mockUsers, mockVehicles, mockReservations } from '@/data/mockData';
 import { User, Vehicle, Reservation } from '@/types';
 
 export function AdminDashboard() {
-  const [users] = useState<User[]>([]);
-  const [vehicles] = useState<Vehicle[]>([]);
-  const [reservations] = useState<Reservation[]>([]);
+  const [users] = useState<User[]>(mockUsers);
+  const [vehicles] = useState<Vehicle[]>(mockVehicles);
+  const [reservations] = useState<Reservation[]>(mockReservations);
 
   // Advanced statistics
   const stats = {
@@ -22,8 +22,8 @@ export function AdminDashboard() {
     rentedVehicles: vehicles.filter(v => v.status === 'alugado').length,
     totalReservations: reservations.length,
     activeReservations: reservations.filter(r => r.status === 'confirmada').length,
-    revenue: reservations.reduce((sum, r) => sum + r.total_amount, 0),
-    avgDailyRate: vehicles.reduce((sum, v) => sum + v.daily_rate, 0) / (vehicles.length || 1),
+    revenue: reservations.reduce((sum, r) => sum + r.valorTotal, 0),
+    avgDailyRate: vehicles.reduce((sum, v) => sum + v.valorDiaria, 0) / vehicles.length,
   };
 
   const getRoleVariant = (role: string) => {
@@ -134,9 +134,9 @@ export function AdminDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <div>
-                          <p className="font-medium">{user.name}</p>
+                          <p className="font-medium">{user.nome}</p>
                           <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <p className="text-sm text-muted-foreground">{user.phone}</p>
+                          <p className="text-sm text-muted-foreground">{user.telefone}</p>
                         </div>
                       </div>
                     </div>
@@ -145,7 +145,7 @@ export function AdminDashboard() {
                         {getRoleLabel(user.role)}
                       </Badge>
                       <div className="text-right text-sm text-muted-foreground">
-                        <p>Criado: {new Date(user.created_at || '').toLocaleDateString()}</p>
+                        <p>Criado: {new Date(user.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
@@ -170,8 +170,8 @@ export function AdminDashboard() {
                   <div key={vehicle.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h4 className="font-medium">{vehicle.brand} {vehicle.model}</h4>
-                        <p className="text-sm text-muted-foreground">{vehicle.plate}</p>
+                        <h4 className="font-medium">{vehicle.modelo}</h4>
+                        <p className="text-sm text-muted-foreground">{vehicle.placa}</p>
                       </div>
                       <Badge 
                         variant={
@@ -183,10 +183,10 @@ export function AdminDashboard() {
                       </Badge>
                     </div>
                     <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Categoria:</span> {vehicle.category}</p>
-                      <p><span className="font-medium">Ano:</span> {vehicle.year}</p>
-                      <p><span className="font-medium">Combustível:</span> {vehicle.fuel_type}</p>
-                      <p><span className="font-medium">Valor/dia:</span> R$ {vehicle.daily_rate}</p>
+                      <p><span className="font-medium">Categoria:</span> {vehicle.categoria}</p>
+                      <p><span className="font-medium">Ano:</span> {vehicle.ano}</p>
+                      <p><span className="font-medium">Cor:</span> {vehicle.cor}</p>
+                      <p><span className="font-medium">Valor/dia:</span> R$ {vehicle.valorDiaria}</p>
                     </div>
                   </div>
                 ))}
