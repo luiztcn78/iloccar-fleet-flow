@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
@@ -43,11 +43,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // In a real app, you'd use proper password hashing (bcrypt, etc.)
       // For this demo, we'll do a simple comparison
       if (users.password_hash === password) {
-        const userWithoutPassword = {
+        const userWithoutPassword: User = {
           id: users.id,
           name: users.name,
           email: users.email,
-          role: users.role,
+          role: users.role as UserRole,
           phone: users.phone
         };
         

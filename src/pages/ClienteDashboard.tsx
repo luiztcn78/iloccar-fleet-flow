@@ -175,7 +175,7 @@ export const ClienteDashboard: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout title="Dashboard Cliente">
       <div className="container mx-auto p-6 space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -187,7 +187,7 @@ export const ClienteDashboard: React.FC = () => {
         </div>
 
         {/* Search Section */}
-        <VehicleSearch onSearch={handleSearch} />
+        <VehicleSearch filters={{}} onSearch={handleSearch} />
 
         {/* My Reservations */}
         <Card>
