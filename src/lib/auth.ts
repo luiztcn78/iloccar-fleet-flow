@@ -12,7 +12,7 @@ export class AuthService {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const user = mockUsers.find(
-      u => u.email === credentials.email && u.senha === credentials.senha
+      u => u.email === credentials.email && u.name === credentials.password // Mock auth - in real app would check password hash
     );
     
     if (user) {
@@ -46,7 +46,7 @@ export class AuthService {
     if (!user) return false;
     
     // Admin has access to everything
-    if (user.role === 'administrador') return true;
+    if (user.role === 'admin') return true;
     
     return user.role === requiredRole;
   }

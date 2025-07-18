@@ -71,7 +71,7 @@ export interface SearchFilters {
 
 export interface LoginCredentials {
   email: string;
-  senha: string;
+  password: string;
 }
 
 export interface AuthContextType {
