@@ -227,7 +227,7 @@ export const FuncionarioDashboard: React.FC = () => {
   };
 
   return (
-    <Layout title="Dashboard Funcionário">
+    <Layout>
       <div className="container mx-auto p-6 space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">
